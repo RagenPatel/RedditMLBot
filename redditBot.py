@@ -12,7 +12,7 @@ from google.cloud import vision
 from google.cloud.vision import types
 
 # Set which subreddit you would like to run the bot on
-sub = "ruralporn"
+sub = "pics"
 # Set number of posts you want to run the bot on in the hot posts
 hot_posts_num = 5
 
