@@ -11,6 +11,11 @@ from PIL import Image
 from google.cloud import vision
 from google.cloud.vision import types
 
+# Set which subreddit you would like to run the bot on
+sub = "ruralporn"
+# Set number of posts you want to run the bot on in the hot posts
+hot_posts_num = 5
+
 bot_reply = "\n\n-------------------- \n \nHere are my top 5 possible classifications: "
 auto_bot = "---------\n\n^^I ^^am ^^a ^^**Bot**. ^^**Upvote** ^^or ^^**Downvote** ^^to ^^let ^^me ^^know ^^how ^^I ^^did ^^with ^^this ^^classification!"
 
@@ -59,7 +64,7 @@ def get_image_labels():
 # urllib.urlretrieve("http://www.digimouth.com/news/media/2011/09/google-logo.jpg", "local-filename.jpg")
 
 reddit = praw.Reddit('bot1')
-subreddit = reddit.subreddit("photocritique")
+subreddit = reddit.subreddit(sub)
 
 if not os.path.isfile("posts_replied_to.txt"):
     posts_replied_to = []
@@ -69,7 +74,7 @@ else:
         posts_replied_to = posts_replied_to.split("\n")
         posts_replied_to = list(filter(None, posts_replied_to))
 
-for submission in subreddit.hot(limit=5):
+for submission in subreddit.hot(limit=hot_posts_num):
     print ("Title:", submission.title)
 
     if submission.id not in posts_replied_to:
@@ -90,9 +95,7 @@ for submission in subreddit.hot(limit=5):
             print("Classification:", output[0], ", ", output[1])
             submission.reply("This image is probably a " + output[0] + " and/or " + output[1] +
                              "." + bot_reply + all_labels + "\n\n" + auto_bot)
-
-
-            # submission.reply("Botty bot says: Me too!!")
+            print "adding", submission.id, " to replied to list"
             posts_replied_to.append(submission.id)
 
 with open("posts_replied_to.txt", "w") as f:
