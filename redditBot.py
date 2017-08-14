@@ -12,11 +12,12 @@ from google.cloud import vision
 from google.cloud.vision import types
 
 # Set which subreddit you would like to run the bot on
-sub = "itookapicture"
+sub = "pics"
 # Set number of posts you want to run the bot on in the hot posts
 hot_posts_num = 5
 
-bot_reply = "\n\n-------------------- \n \nHere are my top 5 possible classifications: "
+bot_reply1 = "\n\n-------------------- \n \nHere are my top "
+bot_reply2 = " possible classifications: "
 auto_bot = "---------\n\n^^I ^^am ^^a ^^**Bot**. ^^**Upvote** ^^or ^^**Downvote** ^^to ^^let ^^me ^^know ^^how ^^I ^^did ^^with ^^this ^^classification!"
 
 def get_image_labels():
@@ -31,10 +32,10 @@ def get_image_labels():
 
     file_size = os.stat('test1.jpg').st_size
     file_size = file_size*0.000001
-    print("File size:", file_size, "MB")
+    print "File size:", file_size, "MB"
 
     if file_size > 4:
-        print("Inside file_size>4 if statement")
+        print "Inside file_size>4 if statement"
         basewidth = 1000
         wpercent = (basewidth / float(img.size[0]))
         hsize = int((float(img.size[1]) * float(wpercent)))
@@ -55,7 +56,7 @@ def get_image_labels():
 
     print('Labels:')
     for label in labels:
-        print(label.description)
+        print label.description
         output.append(label.description)
 
     return output
@@ -75,12 +76,13 @@ else:
         posts_replied_to = list(filter(None, posts_replied_to))
 
 for submission in subreddit.hot(limit=hot_posts_num):
-    print ("Title:", submission.title)
+    print "Title:", submission.title
 
     if submission.id not in posts_replied_to:
         if ".jpg" in submission.url or ".png" in submission.url:
             urllib.urlretrieve(submission.url, "test1.jpg")
             output = get_image_labels()
+            lengthOfList = len(output)
 
             all_labels = ""
             i = 0
@@ -91,10 +93,10 @@ for submission in subreddit.hot(limit=hot_posts_num):
                 else:
                     all_labels = all_labels + ", " + label
 
-            print("Bot replying to : ", submission.title)
-            print("Classification:", output[0], ", ", output[1])
+            print "Bot replying to : ", submission.title
+            print "Classification:", output[0], ", ", output[1]
             submission.reply("This image is probably a " + output[0] + " and/or " + output[1] +
-                             "." + bot_reply + all_labels + "\n\n" + auto_bot)
+                             "." + bot_reply1 + str(lengthOfList) + bot_reply2 + all_labels + "\n\n" + auto_bot)
             print "adding", submission.id, " to replied to list"
             posts_replied_to.append(submission.id)
 
