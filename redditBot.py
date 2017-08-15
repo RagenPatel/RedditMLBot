@@ -1,6 +1,6 @@
 import praw
-import pdb
-import re
+import schedule
+import time
 import urllib
 import io
 import os
@@ -12,9 +12,9 @@ from google.cloud import vision
 from google.cloud.vision import types
 
 # Set which subreddit you would like to run the bot on
-sub = "pics"
+sub = "itookapicture"
 # Set number of posts you want to run the bot on in the hot posts
-hot_posts_num = 5
+hot_posts_num = 10
 
 bot_reply1 = "\n\n-------------------- \n \nHere are my top "
 bot_reply2 = " possible classifications: "
@@ -63,43 +63,55 @@ def get_image_labels():
 
 
 # urllib.urlretrieve("http://www.digimouth.com/news/media/2011/09/google-logo.jpg", "local-filename.jpg")
+def job():
+    reddit = praw.Reddit('bot1')
+    subreddit = reddit.subreddit(sub)
 
-reddit = praw.Reddit('bot1')
-subreddit = reddit.subreddit(sub)
+    if not os.path.isfile("posts_replied_to.txt"):
+        posts_replied_to = []
+    else:
+        with open("posts_replied_to.txt", "r") as f:
+            posts_replied_to = f.read()
+            posts_replied_to = posts_replied_to.split("\n")
+            posts_replied_to = list(filter(None, posts_replied_to))
 
-if not os.path.isfile("posts_replied_to.txt"):
-    posts_replied_to = []
-else:
-    with open("posts_replied_to.txt", "r") as f:
-        posts_replied_to = f.read()
-        posts_replied_to = posts_replied_to.split("\n")
-        posts_replied_to = list(filter(None, posts_replied_to))
+    for submission in subreddit.hot(limit=hot_posts_num):
+        print "Title:", submission.title
 
-for submission in subreddit.hot(limit=hot_posts_num):
-    print "Title:", submission.title
+        if submission.id not in posts_replied_to:
+            if ".jpg" in submission.url or ".png" in submission.url:
+                urllib.urlretrieve(submission.url, "test1.jpg")
+                output = get_image_labels()
+                lengthOfList = len(output)
 
-    if submission.id not in posts_replied_to:
-        if ".jpg" in submission.url or ".png" in submission.url:
-            urllib.urlretrieve(submission.url, "test1.jpg")
-            output = get_image_labels()
-            lengthOfList = len(output)
+                all_labels = ""
+                i = 0
+                for label in output:
+                    if i == 0:
+                        all_labels = ""+label
+                        i = 1
+                    else:
+                        all_labels = all_labels + ", " + label
 
-            all_labels = ""
-            i = 0
-            for label in output:
-                if i == 0:
-                    all_labels = ""+label
-                    i = 1
-                else:
-                    all_labels = all_labels + ", " + label
+                print "Bot replying to : ", submission.title
+                print "Classification:", output[0], ", ", output[1]
+                submission.reply("This image is probably a " + output[0] + " and/or " + output[1] +
+                                 "." + bot_reply1 + str(lengthOfList) + bot_reply2 + all_labels + "\n\n" + auto_bot)
+                print "adding", submission.id, " to replied to list"
+                posts_replied_to.append(submission.id)
 
-            print "Bot replying to : ", submission.title
-            print "Classification:", output[0], ", ", output[1]
-            submission.reply("This image is probably a " + output[0] + " and/or " + output[1] +
-                             "." + bot_reply1 + str(lengthOfList) + bot_reply2 + all_labels + "\n\n" + auto_bot)
-            print "adding", submission.id, " to replied to list"
-            posts_replied_to.append(submission.id)
+    with open("posts_replied_to.txt", "w") as f:
+        for post_id in posts_replied_to:
+            f.write(post_id + "\n")
 
-with open("posts_replied_to.txt", "w") as f:
-    for post_id in posts_replied_to:
-        f.write(post_id + "\n")
+
+
+# Run every hour
+# schedule.every(60).minutes.do(job)
+
+# Run every second
+schedule.every(1).seconds.do(job)
+
+while(1):
+    schedule.run_pending()
+    time.sleep(1)
